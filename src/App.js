@@ -107,7 +107,7 @@ const App = () => {
             const program = new Program(idl, programID, provider); // anchor에서 Program은 온체인 프로그램과의 통신과 관련된 모든 것을 관리한다.
             //트랜잭션을 보내고, 역직렬화된 계정을 가져오고, instructioin 데이터를 디코딩하고, 계정 변경 사항을 컨펌하고, 이벤트를 수신할 수 있다.
             const memeId = await nanoid(); // 랜덤으로 유니크한 키를 만든다. ex a5c8f7d9e1m2c3s5
-            await program.rpc.addGif(inputValue, false, false, "0", memeId { // nanoid 참조 https://velog.io/@lifeisbeautiful/React-nanoid-%EC%82%AC%EC%9A%A9%ED%95%98%EA%B8%B0
+            await program.rpc.addGif(inputValue, false, false, "0", memeId , { // nanoid 참조 https://velog.io/@lifeisbeautiful/React-nanoid-%EC%82%AC%EC%9A%A9%ED%95%98%EA%B8%B0
                 accounts: {
                     baseAccount: baseAccount.publicKey, //start_stuff_off에서는 program을 넣어줬지만 여기서는 굳이 필요없어서 rust에서도 삭제해도 된다.
                     user: provider.wallet.publicKey, // 앞에서 provider은 client의 network와 wallet 정보를 가지고 온다고 했다.
