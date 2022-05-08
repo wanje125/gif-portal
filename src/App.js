@@ -54,7 +54,7 @@ const App = () => {
     const [walletAddress, setWalletAddress] = useState(null);
     const [gifCheck, setGifCheck] = useState(true);
     const [inputValue, setInputValue] = useState('');
-    const [gifList, setgifList] = useState([]);
+    const [gifList, setGifList] = useState([]);
     const [tipValue, setTipValue] = useState();
 
     // 판톰 wallet이 있는지 찾는다. 있으면 useState에서 walletAddress를 사용자의 wallet pubkey로 바꾼다.
@@ -147,8 +147,8 @@ const App = () => {
                 <div className="connected-container">
                     <form
                         onSubmit={(event) => {
-                            event.preventDefault();
-                            sendGif();
+                            event.preventDefault(); {/* event */}
+                            sendGif(); {/* 러스트에서 만든 프로그램에서 아래 input에 입력한 정보를 추가한다.  */ }
                         }}
                     >
                         <input
@@ -163,6 +163,7 @@ const App = () => {
                     </form>
                     <div className="gif-grid">
                         {/* We use index as the key instead, also, the src is now item.gifLink */}
+                        {/* map함수로 리스트를 iterate한다.(for문) */}
                         {gifList.map((item, index) => (
                             <div className="gif-item" key={index}>
                                 <img src={item.gifLink} />
@@ -183,7 +184,7 @@ const App = () => {
         }
     }
 
-    const onInputChange = (event) => {
+    const onInputChange = (event) => { //renderConnectedContainer에서 입력한 문자가 바뀌었을때 setInputValue로 inputValue안에 들어있는 값을 동적으로 바꿔준다.
         const { value } = event.target;
         setInputValue(value);
     };
@@ -207,15 +208,15 @@ const App = () => {
         const provider = new Provider(
             connection, window.solana, opts.preflightCommitment,
         );
-        return provider;
+        return provider; //앞에서 provider은 client의 network와 wallet 정보를 가지고 온다고 했다.
     };
 
     const createGifAccount = async () => {
         try {
-            const provider = getProvider();
-            const program = new Program(idl, programID, provider);
+            const provider = getProvider(); //Returns the default provider being used by the client. The network and wallet context to use. If not provided then uses getProvider.
+            const program = new Program(idl, programID, provider); // anchor에서 Program은 온체인 프로그램과의 통신과 관련된 모든 것을 관리한다.
             console.log("ping")
-            console.info(program.rpc)
+            console.info(program.rpc) //deploy한 프로그램이 startstuffoff를 실행한다. 그러면 client의 wallet은 gif저장을 위한 data account를 생성한다. 
             await program.rpc.startStuffOff({
                 accounts: {
                     baseAccount: baseAccount.publicKey,
@@ -253,7 +254,7 @@ const App = () => {
             const account = await program.account.baseAccount.fetch(baseAccount.publicKey);
 
             console.log("Got the account", account)
-            setGifList(account.gifList)
+            setGifList(account.gifList) // useState를 사용해서 GifList에 account.gifList를 넣음
 
         } catch (error) {
             console.log("Error in getGifList: ", error)
