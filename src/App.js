@@ -11,7 +11,7 @@ import kp from './keypair.json'
 import idl from './idl.json';
 import { nanoid } from 'nanoid';
 import { HeartOutlined, HeartFilled } from '@ant-design/icons';
-
+import Meme from './Meme.js';
 window.Buffer = Buffer;
 
 // SystemProgram is a reference to the Solana runtime!
@@ -111,6 +111,7 @@ const App = () => {
                 accounts: {
                     baseAccount: baseAccount.publicKey, //start_stuff_off에서는 program을 넣어줬지만 여기서는 굳이 필요없어서 rust에서도 삭제해도 된다.
                     user: provider.wallet.publicKey, // 앞에서 provider은 client의 network와 wallet 정보를 가지고 온다고 했다.
+                    systemProgram: SystemProgram.programId,
                 },
             });
             console.log("GIF successfully sent to program", inputValue)
@@ -130,9 +131,10 @@ const App = () => {
         </button>
     );
 
-    const renderConnectedContainer = () => { //wallet이 connect 되었을떄 page를 rendering한다. 
+    const renderConnectedContainer = () => {
+        //wallet이 connect 되었을떄 page를 rendering한다.
         // If we hit this, it means the program account hasn't been initialized.
-        if (gifList === null) {
+        if (gifList == undefined) {
             return (
                 <div className="connected-container">
                     <button className="cta-button submit-gif-button" onClick={createGifAccount}> {/* 러스트의 startStuffOff 실행, 데이터 저장을 위한 account가 없다는 뜻 program의 account를 가져오고 user의 account를 signer로 받아옴 */}
@@ -145,14 +147,16 @@ const App = () => {
         else {
             return (
                 <div className="connected-container">
+                    {console.log(gifList)}
                     <form
                         onSubmit={(event) => {
-                            event.preventDefault(); {/* event */}
-                            sendGif(); {/* 러스트에서 만든 프로그램에서 아래 input에 입력한 정보를 추가한다.  */ }
+                            event.preventDefault(); /* event */
+                            sendGif(); /* 러스트에서 만든 프로그램에서 아래 input에 입력한 정보를 추가한다.  */ 
                         }}
                     >
                         <input
                             type="text"
+                            className="form-input"
                             placeholder="Enter gif link!"
                             value={inputValue}
                             onChange={onInputChange}
@@ -165,18 +169,24 @@ const App = () => {
                         {/* We use index as the key instead, also, the src is now item.gifLink */}
                         {/* map함수로 리스트를 iterate한다.(for문) */}
                         {gifList.map((item, index) => (
-                            <div className="gif-item" key={index}>
-                                <img src={item.gifLink} />
-                                <p className='sub-text'>
-                                    {item.userAddress.toString()}
-                                </p>
-                                {/*<div>
-                                    {like ?
-                                        <HeartFilled className="button red" onClick={likeChange} /> :
-                                        <HeartOutlined className="button" onClick={likeChange} />}
-                                </div>
-                                {item.upvote}*/}
-                            </div>
+                            <div>{console.log(item)}
+                            <Meme
+                                key={item.id}
+                                checkChange={() => onCheckChange(item.id, item.check, index)}
+                                isCheck={item.check}
+                                memeUserAddress={item.userAddress.toString()}
+                                memeImage={item.gifLink}
+                                likes={item.myLikes ? item.myLikes.toString() : "0"}
+                                timestamp={item.timestamp ? item.timestamp.toString() : "0"}
+                                tipClick={() => onTipClick(item.id)}
+                                tipState={item.showTip}
+                                tipNum={tipValue}
+                                tipChange={onTipChange}
+                                sendTip={() => toSendSol(index)}
+                                viewerAddress={walletAddress}
+                                gifDelete={() => deleteGif(index)}
+                            />
+                           </div>
                         ))}
                     </div>
                 </div>
@@ -248,6 +258,8 @@ const App = () => {
     }, []);
 
     const getGifList = async () => {
+
+
         try {
             const provider = getProvider();
             const program = new Program(idl, programID, provider);
@@ -258,7 +270,7 @@ const App = () => {
 
         } catch (error) {
             console.log("Error in getGifList: ", error)
-            setGifList(null);
+            setGifList([]);
         }
     }
 
@@ -268,12 +280,123 @@ const App = () => {
             getGifList()
         }
     }, [walletAddress]);
-    /*
- * Let's define this method so our code doesn't break.
- * We will write the logic for this next!
 
-setGifCheck(gifList.check);
-*/
+    const onTipClick = (id) => {
+        return setGifList(oldGif => oldGif.map(item => {
+            return item.id === id ?
+                { ...item, showTip: !item.showTip } :
+                item
+        }));
+
+    }
+
+    const onTipChange = (event) => {
+        const { value } = event.target;
+        setTipValue(value);
+    };
+
+    const toSendSol = async (id) => {
+        if (tipValue > 0) {
+            try {
+                const provider = getProvider();
+                const program = new Program(idl, programID, provider);
+
+                const sol = await tipValue * 1000000000;
+                const solString = await sol.toString();
+
+                await program.rpc.sendSol(solString, id, {
+                    accounts: {
+                        baseAccount: baseAccount.publicKey,
+                        from: provider.wallet.publicKey,
+                        to: gifList[id].userAddress,
+                        systemProgram: SystemProgram.programId,
+                    },
+                });
+
+                await getGifList();
+                setTipValue();
+
+            } catch (error) {
+                console.log("Error sending like:", error)
+            }
+        } else {
+            console.log("Empty input")
+        }
+    }
+    const onCheckChange = async (id, tick, numIndex) => {
+        const memeClick = await setGifList(oldGif => oldGif.map(item => {
+            return item.id === id ?
+                { ...item, check: !item.check } :
+                item
+        }));
+
+        if (tick === false) {
+            try {
+                const provider = getProvider();
+                const program = new Program(idl, programID, provider);
+
+                await program.rpc.upvoteGif(true, numIndex, {
+                    accounts: {
+                        baseAccount: baseAccount.publicKey,
+                        user: provider.wallet.publicKey,
+                    },
+                });
+
+                await getGifList();
+
+            } catch (error) {
+                console.log("Error sending like:", error)
+            }
+        } else {
+            try {
+                const provider = getProvider();
+                const program = new Program(idl, programID, provider);
+
+
+                await program.rpc.upvoteGif(false, numIndex, {
+                    accounts: {
+                        baseAccount: baseAccount.publicKey,
+                        user: provider.wallet.publicKey,
+                    },
+                });
+
+                await getGifList();
+
+            } catch (error) {
+                console.log("Error sending like:", error)
+            }
+        }
+
+    };
+
+    const deleteGif = async (num) => {
+
+        try {
+            const provider = getProvider();
+            const program = new Program(idl, programID, provider);
+
+            await program.rpc.removeGif(num, {
+                accounts: {
+                    baseAccount: baseAccount.publicKey,
+                    user: provider.wallet.publicKey,
+                },
+            });
+
+            await getGifList();
+
+        } catch (error) {
+            console.log("Error deleting gif:", error)
+        }
+
+    }
+
+    /*
+     
+    * Let's define this method so our code doesn't break.
+    * We will write the logic for this next!
+   
+ setGifCheck(gifList.check);
+ */
 
   return (
       <div className="App">

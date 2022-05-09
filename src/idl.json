@@ -35,12 +35,114 @@
           "name": "user",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
         {
           "name": "gifLink",
           "type": "string"
+        },
+        {
+          "name": "check",
+          "type": "bool"
+        },
+        {
+          "name": "showTip",
+          "type": "bool"
+        },
+        {
+          "name": "likes",
+          "type": "string"
+        },
+        {
+          "name": "id",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "upvoteGif",
+      "accounts": [
+        {
+          "name": "baseAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "upvote",
+          "type": "bool"
+        },
+        {
+          "name": "gifId",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "sendSol",
+      "accounts": [
+        {
+          "name": "baseAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "from",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "to",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "string"
+        },
+        {
+          "name": "gifId",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "removeGif",
+      "accounts": [
+        {
+          "name": "baseAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "index",
+          "type": "u16"
         }
       ]
     }
@@ -80,12 +182,36 @@
           {
             "name": "userAddress",
             "type": "publicKey"
+          },
+          {
+            "name": "check",
+            "type": "bool"
+          },
+          {
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "name": "myLikes",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "showTip",
+            "type": "bool"
+          },
+          {
+            "name": "tip",
+            "type": "u64"
           }
         ]
       }
     }
   ],
   "metadata": {
-    "address": "3hCvy79pX9ULsfmvzo6fd4pjnyncJq5Z3XVTTZEC3SV4"
+    "address": "FTx2h59yCryjDkf8FifHw6XmRjfp2GWcKgoPqzXXnJT2"
   }
 }
