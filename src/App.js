@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Alert } from 'react-bootstrap';
 import twitterLogo from './assets/twitter-logo.svg';
 import './App.css';
 import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
@@ -67,16 +68,19 @@ const App = () => {
             console.log({ solana });
             if (solana) { //만약 solana가 있으면 판톰월렛이 있는지 찾는다. 다른 월렛 연결도 필요한지는 모르겠다.
                 if (solana.isPhantom) {
-                    console.log('Phantom wallet found!');
+                    console.log('판톰이 설치되어 있습니다.');
                     const response = await solana.connect({ onlyIfTrusted: true }); // 판톰과 연결한다. 
                     console.log(
-                        'Connected with Public Key;',
+                        '해당 pubkey와 연결되었습니다. pubkey ;',
                         response.publicKey.toString()
                     );
                     setWalletAddress(response.publicKey.toString()); //useState에서 walletAddress를 ()의 값으로 바꾼다. 즉, client의 wallet address
                 }
             } else {
-                alert('Solana object not found! Get a Phantom Wallet')
+                if (window.confirm('판톰이 없습니다. 판톰 설치 페이지로 이동')) {
+                    window.location.href = 'https://phantom.app/download';
+                };
+
             }
         } catch (error) {
             console.error(error);
@@ -88,7 +92,7 @@ const App = () => {
 
         if (solana) {
             const response = await solana.connect();
-            console.log('Connected with Public Key:', response.publicKey.toString());
+            console.log('해당 pubkey와 연결되었습니다. pubkey ;', response.publicKey.toString());
             setWalletAddress(response.publicKey.toString());
         }
     };
@@ -97,7 +101,7 @@ const App = () => {
 
     const sendGif = async () => {
         if (inputValue.length === 0) { //inputValue는 gif를 입력하는 칸이다. submit버튼을 눌렀는데 아무것도 없으면 gif가 없다고 반환한다. 
-            console.log("No gif link given!")
+            console.log("Gif link를 입력하시오!")
             return
         }
         setInputValue(''); //우선 그전에 남아있을 수 있는 inputValue를 초기화한다. 
@@ -114,7 +118,7 @@ const App = () => {
                     systemProgram: SystemProgram.programId,
                 },
             });
-            console.log("GIF successfully sent to program", inputValue)
+            console.log("GIF가 solana program으로 보내졌습니다", inputValue)
 
             await getGifList();
         } catch (error) {
@@ -167,7 +171,7 @@ const App = () => {
                     </form>
                     <div className="gif-grid">
                         {/* We use index as the key instead, also, the src is now item.gifLink */}
-                        {/* map함수로 리스트를 iterate한다.(for문) */}
+                        {/* map함수로 리스트를 iterate한다.(for문) 아래에서 만약 item.myLikes가 없으면 default로 0을 넣는다.*/ }
                         {gifList.map((item, index) => (
                             <div>{console.log(item)}
                             <Meme
@@ -234,6 +238,10 @@ const App = () => {
                     systemProgram: SystemProgram.programId,
                 },
                 signers: [baseAccount]
+                // signers array도 추가해서 넣었다. []안에 base_account를 넣어야한다.
+                // We have to add the base_account here because whenever an account gets created, it has to sign its creation transaction. 
+                // We don't have to add user even though we gave it the Signer type in the program because it is the program provider and therefore signs the transaction by default.
+
             });
             console.log("Created a new BaseAccount w/ address:", baseAccount.publicKey.toString())
             await getGifList();
@@ -281,17 +289,19 @@ const App = () => {
         }
     }, [walletAddress]);
 
-    const onTipClick = (id) => {
-        return setGifList(oldGif => oldGif.map(item => {
+    const onTipClick = (id) => { // 해당 item의 팁을 클릭했을때 item.showTip을 true로 바꾼다. 그리고 나머지 아이템 
+        return setGifList(oldGif => oldGif.map(item => { // oldGif는 이미 setGifList에 들어있는값[{},{},{}...] 형식
             return item.id === id ?
-                { ...item, showTip: !item.showTip } :
-                item
+                { ...item, showTip: !item.showTip } : //리액트 상태에서 객체를 수정해야 할 때에는, inputs[name] = value 이런식으로 직접 수정하면 안됨.
+                                    // 대신 새로운 객체를 만들어서 새로운 객체에 변화를 주고, ...을 이용해서 이를 상태로 사용해야함.
+                                    // 새로운 객체를 생성하고 item.showTip만 바꿔줌
+                item                // id가 아니면 원래 객체 반환
         }));
 
     }
 
     const onTipChange = (event) => {
-        const { value } = event.target;
+        const { value } = event.target; // tip을 입력하는 칸에서 입력칸이 변환하면 적용
         setTipValue(value);
     };
 
@@ -301,7 +311,7 @@ const App = () => {
                 const provider = getProvider();
                 const program = new Program(idl, programID, provider);
 
-                const sol = await tipValue * 1000000000;
+                const sol = await tipValue * 1000000000; // onTipChange에서 tipValue가 설정됨
                 const solString = await sol.toString();
 
                 await program.rpc.sendSol(solString, id, {
@@ -323,51 +333,51 @@ const App = () => {
             console.log("Empty input")
         }
     }
-    const onCheckChange = async (id, tick, numIndex) => {
+    const onCheckChange = async (id, tick, numIndex) => { // item.check를 tick으로 받음
         const memeClick = await setGifList(oldGif => oldGif.map(item => {
             return item.id === id ?
                 { ...item, check: !item.check } :
                 item
-        }));
+            }));
 
-        if (tick === false) {
-            try {
-                const provider = getProvider();
-                const program = new Program(idl, programID, provider);
+            if (tick === false) {
+                try {
+                    const provider = getProvider();
+                    const program = new Program(idl, programID, provider);
 
-                await program.rpc.upvoteGif(true, numIndex, {
-                    accounts: {
-                        baseAccount: baseAccount.publicKey,
-                        user: provider.wallet.publicKey,
-                    },
-                });
+                    await program.rpc.upvoteGif(true, numIndex, {
+                        accounts: {
+                            baseAccount: baseAccount.publicKey,
+                            user: provider.wallet.publicKey,
+                        },
+                    });
 
-                await getGifList();
+                    await getGifList();
 
-            } catch (error) {
-                console.log("Error sending like:", error)
+                } catch (error) {
+                    console.log("Error sending like:", error)
+                }
+            } else {
+                try {
+                    const provider = getProvider();
+                    const program = new Program(idl, programID, provider);
+
+
+                    await program.rpc.upvoteGif(false, numIndex, {
+                        accounts: {
+                            baseAccount: baseAccount.publicKey,
+                            user: provider.wallet.publicKey,
+                        },
+                    });
+
+                    await getGifList();
+
+                } catch (error) {
+                    console.log("Error sending like:", error)
+                }
             }
-        } else {
-            try {
-                const provider = getProvider();
-                const program = new Program(idl, programID, provider);
 
-
-                await program.rpc.upvoteGif(false, numIndex, {
-                    accounts: {
-                        baseAccount: baseAccount.publicKey,
-                        user: provider.wallet.publicKey,
-                    },
-                });
-
-                await getGifList();
-
-            } catch (error) {
-                console.log("Error sending like:", error)
-            }
-        }
-
-    };
+        };
 
     const deleteGif = async (num) => {
 
